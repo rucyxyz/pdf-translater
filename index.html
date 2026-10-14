@@ -19,28 +19,36 @@
   }
   .wrap { max-width:960px; margin:0 auto; padding:16px; }
   h1 { font-size:1.25rem; margin:8px 0 16px; text-align:center; }
-  .controls {
-    display:flex; flex-direction:column; gap:10px; background:var(--card);
-    border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;
+
+  .panel {
+    background: var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:14px; margin-bottom:12px; display:flex; flex-direction:column; gap:10px;
   }
-  .file-row { display:flex; flex-direction:column; gap:6px; }
-  .file-row label { font-size:.85rem; color:var(--muted); }
-  input[type="file"], input[type="number"], select {
-    width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;
-    background:#fff; font-size:1rem; color: var(--text);
+
+  input[type="file"], select {
+    width:100%; padding:12px; border:1px solid var(--border); border-radius:8px;
+    background:#fff; font-size:1rem; color:var(--text);
   }
-  .row-inline { display:flex; gap:8px; flex-wrap:wrap; }
-  .row-inline > * { flex:1 1 140px; }
-  .row-inline.small > * { flex:1 1 90px; }
+
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  .row > * { flex:1 1 140px; }
+
   button {
-    padding:12px 16px; border:none; border-radius:8px; background:var(--accent);
+    padding:14px 18px; border:none; border-radius:8px; background:var(--accent);
     color:#fff; font-size:1rem; font-weight:600; cursor:pointer; width:100%;
-    transition:opacity .15s;
   }
   button:disabled { opacity:.5; cursor:not-allowed; }
   button.secondary { background:#fff; color:var(--accent); border:1px solid var(--accent); }
   button.danger { background:#fff; color:var(--danger); border:1px solid var(--danger); }
-  #status { min-height:1.2em; margin:8px 4px; font-size:.9rem; color:var(--muted); text-align:center; }
+
+  #status {
+    min-height:1.4em; margin:6px 4px; font-size:.95rem; color:var(--text);
+    text-align:center; font-weight:600;
+  }
+  #subStatus { text-align:center; color:var(--muted); font-size:.85rem; margin-bottom:8px; min-height:1.2em; }
+
+  .progress { height:8px; background:#e5e7eb; border-radius:999px; overflow:hidden; margin:0 4px 12px; }
+  .progress > div { height:100%; width:0%; background:var(--accent); transition:width .3s; }
 
   .accordion { background:var(--card); border:1px solid var(--border);
     border-radius:12px; margin-bottom:12px; overflow:hidden; }
@@ -49,7 +57,6 @@
     padding:14px 16px; cursor:pointer; user-select:none; font-weight:600; background:#fff;
   }
   .acc-header:hover { background:#f1f3f7; }
-  .acc-header .title { display:flex; align-items:center; gap:8px; font-size:1rem; }
   .acc-header .arrow { transition:transform .25s; font-size:.9rem; color:var(--muted); }
   .accordion.open .acc-header .arrow { transform:rotate(180deg); }
   .acc-body { max-height:0; overflow:hidden; transition:max-height .3s ease;
@@ -63,17 +70,11 @@
   }
   .acc-content:empty::before { content:"（まだ内容がありません）"; color:var(--muted);
     font-style:italic; font-family:inherit; }
-  .badge { background:var(--accent); color:#fff; font-size:.7rem; padding:2px 8px;
-    border-radius:999px; font-weight:500; }
-  .progress {
-    height:6px; background:#e5e7eb; border-radius:999px; overflow:hidden; margin:8px 4px;
-  }
-  .progress > div { height:100%; width:0%; background:var(--accent); transition:width .3s; }
 
   @media (min-width:640px) {
     h1 { font-size:1.5rem; margin-top:16px; }
-    .controls { flex-direction:row; align-items:flex-end; flex-wrap:wrap; }
-    .file-row { flex:2 1 260px; }
+    .panel { flex-direction:row; align-items:center; flex-wrap:wrap; }
+    .panel .grow { flex:1 1 220px; }
     button { width:auto; }
     .acc-content { font-size:.92rem; max-height:65vh; }
   }
@@ -84,13 +85,11 @@
 <div class="wrap">
   <h1>PDF 全文自動翻訳</h1>
 
-  <div class="controls">
-    <div class="file-row">
-      <label for="pdfFile">PDFファイル</label>
+  <div class="panel">
+    <div class="grow">
       <input type="file" id="pdfFile" accept="application/pdf">
     </div>
-
-    <div class="row-inline small">
+    <div class="grow">
       <select id="targetLang" aria-label="翻訳先言語">
         <option value="ja">日本語</option>
         <option value="en">英語</option>
@@ -100,31 +99,26 @@
         <option value="de">ドイツ語</option>
         <option value="es">スペイン語</option>
       </select>
-      <input type="number" id="maxPages" min="0" placeholder="先頭N ページ (0=全部)" title="0 または空欄で全ページ">
     </div>
-
-    <div class="row-inline">
-      <button id="translateBtn">翻訳開始</button>
-      <button id="cancelBtn" class="danger" disabled>停止</button>
-      <button id="downloadBtn" class="secondary" disabled>翻訳テキストをDL</button>
-    </div>
+    <button id="translateBtn">翻訳開始</button>
+    <button id="cancelBtn" class="danger" disabled>停止</button>
+    <button id="downloadBtn" class="secondary" disabled>ダウンロード</button>
   </div>
 
   <div id="status"></div>
+  <div id="subStatus"></div>
   <div class="progress"><div id="progressBar"></div></div>
 
   <div class="accordion" id="accOriginal">
     <div class="acc-header" data-target="accOriginal">
-      <span class="title">📄 原文 <span class="badge" id="origBadge" hidden></span></span>
-      <span class="arrow">▼</span>
+      <span>📄 原文</span><span class="arrow">▼</span>
     </div>
     <div class="acc-body"><div class="acc-content" id="original"></div></div>
   </div>
 
   <div class="accordion" id="accTranslated">
     <div class="acc-header" data-target="accTranslated">
-      <span class="title">🌐 翻訳 <span class="badge" id="transBadge" hidden></span></span>
-      <span class="arrow">▼</span>
+      <span>🌐 翻訳</span><span class="arrow">▼</span>
     </div>
     <div class="acc-body"><div class="acc-content" id="translated"></div></div>
   </div>
@@ -136,26 +130,24 @@ const pdfjsLib = window.pdfjsLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-/* ============ 設定（速さの主要パラメータ） ============ */
-const EXTRACT_CONCURRENCY   = 10;   // PDF抽出の並列数
-const TRANSLATE_CONCURRENCY = 6;    // 翻訳の並列数（6〜10推奨）
-const CHUNK_SIZE            = 1200; // 1リクエストの文字数（大きいほど速いが失敗率↑）
-const MAX_RETRY             = 3;
-const UI_THROTTLE_MS        = 2000; // DOM更新間隔
+/* 内部設定（速さ担当／UIには出しません） */
+const EXTRACT_PARALLEL   = 10;
+const TRANSLATE_PARALLEL = 6;
+const PAGE_TEXT_LIMIT    = 1200;
+const MAX_RETRY          = 3;
+const UI_REFRESH_MS      = 1500;
 
-/* ============ DOM ============ */
+/* DOM */
 const fileInput    = document.getElementById('pdfFile');
 const translateBtn = document.getElementById('translateBtn');
 const cancelBtn    = document.getElementById('cancelBtn');
 const downloadBtn  = document.getElementById('downloadBtn');
 const statusEl     = document.getElementById('status');
+const subStatusEl  = document.getElementById('subStatus');
 const progressBar  = document.getElementById('progressBar');
 const originalEl   = document.getElementById('original');
 const translatedEl = document.getElementById('translated');
 const targetLang   = document.getElementById('targetLang');
-const maxPagesEl   = document.getElementById('maxPages');
-const origBadge    = document.getElementById('origBadge');
-const transBadge   = document.getElementById('transBadge');
 
 let translatedText = '';
 let cancelFlag = false;
@@ -182,28 +174,25 @@ function autoOpen(id) {
   acc.querySelector('.acc-body').style.maxHeight = 'none';
 }
 
-fileInput.addEventListener('change', () => {
-  const f = fileInput.files[0];
-  if (!f) return;
-  origBadge.hidden = false;
-  origBadge.textContent = f.name.length > 22 ? f.name.slice(0, 22) + '…' : f.name;
-});
-
-/* ============ ユーティリティ ============ */
+/* ============ ヘルパ ============ */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const fmtTime = s => {
-  if (!isFinite(s) || s < 0) return '--:--';
-  s = Math.round(s);
-  const m = Math.floor(s / 60), sec = s % 60;
-  if (m >= 60) return `${Math.floor(m/60)}h ${m%60}m`;
-  return `${m}:${String(sec).padStart(2,'0')}`;
-};
+
+function fmtEta(sec) {
+  if (!isFinite(sec) || sec < 0) return '--:--';
+  sec = Math.round(sec);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}時間${m}分`;
+  if (m > 0) return `${m}分${String(s).padStart(2,'0')}秒`;
+  return `${s}秒`;
+}
 
 function setProgress(p) {
   progressBar.style.width = Math.max(0, Math.min(100, p * 100)) + '%';
 }
 
-/* 並列実行プール：items を limit 並列で worker に渡す */
+/* 並列実行（内部専用） */
 async function runPool(count, limit, worker) {
   let idx = 0;
   const runners = Array.from({ length: Math.min(limit, count) }, async () => {
@@ -217,26 +206,27 @@ async function runPool(count, limit, worker) {
   await Promise.all(runners);
 }
 
-/* 長文分割（句点・改行優先、区切りがなければ強制分割） */
-function splitText(text, maxLen) {
+/* 1ページ分のテキストを、長すぎる場合だけ複数に分ける */
+function splitForTranslation(text, maxLen) {
+  if (text.length <= maxLen) return [text];
   const sentences = text.split(/(?<=[。．.!?！？\n])/);
-  const chunks = [];
+  const out = [];
   let cur = '';
   for (const s of sentences) {
     if (s.length > maxLen) {
-      if (cur) { chunks.push(cur); cur = ''; }
-      for (let i = 0; i < s.length; i += maxLen) chunks.push(s.slice(i, i + maxLen));
+      if (cur) { out.push(cur); cur = ''; }
+      for (let i = 0; i < s.length; i += maxLen) out.push(s.slice(i, i + maxLen));
       continue;
     }
-    if ((cur + s).length > maxLen) { chunks.push(cur); cur = s; }
+    if ((cur + s).length > maxLen) { out.push(cur); cur = s; }
     else cur += s;
   }
-  if (cur) chunks.push(cur);
-  return chunks;
+  if (cur) out.push(cur);
+  return out;
 }
 
-/* Google 非公式エンドポイント */
-async function translateGoogle(text, tl) {
+/* 翻訳API（1回分） */
+async function translateOnce(text, tl) {
   const url =
     'https://translate.googleapis.com/translate_a/single' +
     `?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
@@ -246,72 +236,25 @@ async function translateGoogle(text, tl) {
   return data[0].map(x => x[0]).join('');
 }
 
-/* ============ 抽出 ============ */
-async function extractAllPages(pdf, limitPages, onProgress) {
-  const total = limitPages > 0 ? Math.min(limitPages, pdf.numPages) : pdf.numPages;
-  const pageTexts = new Array(total);
-  let done = 0;
-  const t0 = performance.now();
-  await runPool(total, EXTRACT_CONCURRENCY, async (i) => {
-    const page = await pdf.getPage(i + 1);
-    const content = await page.getTextContent();
-    pageTexts[i] = content.items.map(it => it.str).join(' ') + '\n\n';
-    page.cleanup();
-    done++;
-    const elapsed = (performance.now() - t0) / 1000;
-    const speed = done / elapsed;
-    const eta = (total - done) / speed;
-    onProgress(done, total, `抽出中 ${done}/${total} ページ（${speed.toFixed(0)} p/s・残り ${fmtTime(eta)}）`);
-  });
-  return pageTexts.join('');
-}
-
-/* ============ 翻訳 ============ */
-async function translateAll(chunks, tl, onProgress, onPartial) {
-  const total = chunks.length;
-  const results = new Array(total);
-  let done = 0;
-  let failed = 0;
-  const t0 = performance.now();
-  let lastUi = 0;
-
-  await runPool(total, TRANSLATE_CONCURRENCY, async (i) => {
+/* ページ1つ分を翻訳（内部で分割されたら順に処理） */
+async function translatePage(text, tl) {
+  const parts = splitForTranslation(text, PAGE_TEXT_LIMIT);
+  const out = [];
+  for (const p of parts) {
     let attempt = 0;
-    while (attempt <= MAX_RETRY) {
-      try {
-        results[i] = await translateGoogle(chunks[i], tl);
-        break;
-      } catch (e) {
+    while (true) {
+      try { out.push(await translateOnce(p, tl)); break; }
+      catch (e) {
         attempt++;
-        if (attempt > MAX_RETRY) { results[i] = ''; failed++; break; }
+        if (attempt > MAX_RETRY) { out.push(''); break; }
         await sleep(300 * Math.pow(2, attempt - 1));
       }
     }
-    done++;
-    const now = performance.now();
-    if (now - lastUi > UI_THROTTLE_MS || done === total) {
-      lastUi = now;
-      const elapsed = (now - t0) / 1000;
-      const speed = done / elapsed;
-      const eta = (total - done) / speed;
-      onProgress(done, total,
-        `翻訳中 ${done}/${total} チャンク（${speed.toFixed(1)} c/s・残り ${fmtTime(eta)}${failed ? `・失敗 ${failed}` : ''}）`);
-      onPartial(results);
-    }
-  });
-  return results;
+  }
+  return out.join(' ');
 }
 
-/* ============ 進捗プレビュー（末尾のみ表示してDOM負荷軽減） ============ */
-function buildPreview(results, max = 20000) {
-  const parts = [];
-  for (let i = 0; i < results.length; i++) if (results[i]) parts.push(results[i]);
-  let s = parts.join(' ');
-  if (s.length > max) s = '…' + s.slice(-max);
-  return s;
-}
-
-/* ============ メイン ============ */
+/* ============ メイン処理 ============ */
 translateBtn.addEventListener('click', async () => {
   const file = fileInput.files[0];
   if (!file) return alert('PDFファイルを選択してください');
@@ -322,61 +265,86 @@ translateBtn.addEventListener('click', async () => {
   downloadBtn.disabled = true;
   originalEl.textContent = '';
   translatedEl.textContent = '';
-  transBadge.hidden = true;
   translatedText = '';
   setProgress(0);
-  statusEl.textContent = 'PDFを読み込み中...';
+  statusEl.textContent = 'PDFを読み込んでいます...';
+  subStatusEl.textContent = '';
 
-  const limitPages = parseInt(maxPagesEl.value, 10) || 0;
+  const t0 = performance.now();
 
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const totalPages = pdf.numPages;
 
-    // ---- 抽出 ----
-    const t0 = performance.now();
-    const fullText = await extractAllPages(pdf, limitPages, (d, t, msg) => {
-      statusEl.textContent = msg;
-      setProgress((d / t) * 0.25); // 抽出は全体の25%に割り当て
+    /* --- 1. 全ページのテキストを並列で抜き出す --- */
+    const pageTexts = new Array(totalPages);
+    let extracted = 0;
+    const extractStart = performance.now();
+
+    await runPool(totalPages, EXTRACT_PARALLEL, async (i) => {
+      const page = await pdf.getPage(i + 1);
+      const content = await page.getTextContent();
+      pageTexts[i] = content.items.map(it => it.str).join(' ') + '\n\n';
+      page.cleanup();
+      extracted++;
+      const elapsed = (performance.now() - extractStart) / 1000;
+      const eta = (totalPages - extracted) / (extracted / elapsed);
+      statusEl.textContent = `読み込み中 ${extracted}/${totalPages}ページ 残り時間 ${fmtEta(eta)}`;
+      setProgress((extracted / totalPages) * 0.2);
     });
-    if (cancelFlag) throw new Error('キャンセルされました');
 
+    if (cancelFlag) throw new Error('停止しました');
+
+    const fullText = pageTexts.join('');
     originalEl.textContent = fullText;
-    origBadge.hidden = false;
-    origBadge.textContent = `原文 ${fullText.length.toLocaleString()}字`;
-    setProgress(0.25);
+    setProgress(0.2);
 
-    // ---- チャンク分割 ----
-    const chunks = splitText(fullText, CHUNK_SIZE);
-    if (chunks.length === 0) throw new Error('テキストが抽出できませんでした（スキャンPDFの可能性）');
+    /* --- 2. ページごとに翻訳 --- */
+    const results = new Array(totalPages);
+    let done = 0;
+    const transStart = performance.now();
+    let lastUi = 0;
 
-    // ---- 翻訳 ----
-    const results = await translateAll(
-      chunks,
-      targetLang.value,
-      (d, t, msg) => {
-        statusEl.textContent = msg;
-        setProgress(0.25 + (d / t) * 0.75);
-      },
-      (partial) => { translatedEl.textContent = buildPreview(partial); }
-    );
+    await runPool(totalPages, TRANSLATE_PARALLEL, async (i) => {
+      results[i] = await translatePage(pageTexts[i], targetLang.value);
+      done++;
 
-    if (cancelFlag) {
-      translatedText = results.filter(Boolean).join(' ');
-      statusEl.textContent = '停止しました（途中までの翻訳を保存できます）';
-    } else {
-      translatedText = results.filter(Boolean).join(' ');
-      statusEl.textContent = `完了（${fmtTime((performance.now() - t0) / 1000)}・${translatedText.length.toLocaleString()}字）`;
-      setProgress(1);
-    }
+      const now = performance.now();
+      if (now - lastUi > UI_REFRESH_MS || done === totalPages) {
+        lastUi = now;
+        const elapsed = (now - transStart) / 1000;
+        const speed = done / elapsed;
+        const eta = (totalPages - done) / speed;
+        statusEl.textContent = `翻訳中 ${done}/${totalPages}ページ 残り時間 ${fmtEta(eta)}`;
+        subStatusEl.textContent = `経過 ${fmtEta(elapsed)}`;
+        setProgress(0.2 + (done / totalPages) * 0.8);
+        // 途中経過を末尾だけ表示（負荷軽減）
+        const preview = results.filter(Boolean).join(' ');
+        translatedEl.textContent = preview.length > 20000
+          ? '…' + preview.slice(-20000) : preview;
+      }
+    });
+
+    /* --- 3. 完了 --- */
+    translatedText = results.filter(Boolean).join(' ');
     translatedEl.textContent = translatedText;
-    transBadge.hidden = false;
-    transBadge.textContent = cancelFlag ? '部分' : '完成';
-    autoOpen('accTranslated');
+
+    const totalElapsed = (performance.now() - t0) / 1000;
+    if (cancelFlag) {
+      statusEl.textContent = `停止しました（${done}/${totalPages}ページまで翻訳済み）`;
+      subStatusEl.textContent = `経過 ${fmtEta(totalElapsed)}`;
+    } else {
+      statusEl.textContent = `完了（${totalPages}ページ・所要時間 ${fmtEta(totalElapsed)}）`;
+      subStatusEl.textContent = `${translatedText.length.toLocaleString()}文字`;
+      setProgress(1);
+      autoOpen('accTranslated');
+    }
     downloadBtn.disabled = !translatedText;
   } catch (err) {
     console.error(err);
     statusEl.textContent = 'エラー: ' + err.message;
+    subStatusEl.textContent = '';
   } finally {
     translateBtn.disabled = false;
     cancelBtn.disabled = true;
@@ -386,7 +354,7 @@ translateBtn.addEventListener('click', async () => {
 cancelBtn.addEventListener('click', () => {
   cancelFlag = true;
   cancelBtn.disabled = true;
-  statusEl.textContent = '停止中...（進行中のリクエスト完了を待っています）';
+  subStatusEl.textContent = '停止しています...（実行中の処理の完了を待っています）';
 });
 
 downloadBtn.addEventListener('click', () => {
